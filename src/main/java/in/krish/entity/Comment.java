@@ -1,6 +1,7 @@
 package in.krish.entity;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import javax.persistence.*;
 
@@ -12,34 +13,35 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Setter
-@Getter
+@Setter@Getter
 @AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "comment")
 public class Comment {
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	private Long id ;
+	private Long id;
 
-	@Lob
-	private String content ;
-	private String name ;
-	private String email ;
-	
+	private String content;
+
+	// ✅ identity only (from JWT / headers)
+	@Column(name = "user_id", nullable = false)
+	private Long userId;
+
+	// ✅ denormalized (optional but recommended)
+	@Column(name = "user_email")
+	private String userEmail;
+
 	@CreationTimestamp
-	private LocalDate createdon ;
+	private LocalDateTime createdAt;
 
-
-	@ManyToOne
-	@JoinColumn(name = "post_id", nullable = false)
-	private Post post;
-
+	@Column(name = "tenant_id", nullable = false)
+	private Long tenantId;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "user_id")
-	private User user;
+	@JoinColumn(name = "post_id")
+	private Post post;
 
+	public Comment() {
 
-    public Long tenantId;
+	}
 }
