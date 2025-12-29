@@ -1,32 +1,43 @@
-package in.krish.entity;
-
-import lombok.Getter;
-import lombok.Setter;
-import javax.persistence.*;
-import java.time.LocalDateTime;
-
-@Entity
-@Table(name = "notifications")
-@Getter
-@Setter
-public class Notification {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @ManyToOne
-    @JoinColumn(name = "sender_id", nullable = false)
-    private User sender;
-
-    @ManyToOne
-    @JoinColumn(name = "post_id")
-    private Post post;
-
-    private String message;
-    private Boolean isRead = false;
-    private LocalDateTime createdAt = LocalDateTime.now();
-}
+//package in.krish.entity;
+//
+//import lombok.*;
+//import org.hibernate.annotations.CreationTimestamp;
+//
+//import javax.persistence.*;
+//import java.time.LocalDateTime;
+//
+//@Entity
+//@Table(name = "notification")
+//@Getter
+//@Setter
+//@NoArgsConstructor
+//@AllArgsConstructor
+//public class Notification {
+//
+//    @Id
+//    @GeneratedValue(strategy = GenerationType.IDENTITY)
+//    private Long id;
+//
+//    // 🔐 RECEIVER USER ID (JWT)
+//    @Column(name = "user_id", nullable = false)
+//    private Long userId;
+//
+//    // 🔐 SENDER USER ID (JWT)
+//    @Column(name = "sender_id")
+//    private Long senderId;
+//
+//    // 🔗 POST IS LOCAL ENTITY → RELATION OK
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "post_id")
+//    private Post post;
+//
+//    @Column(nullable = false, length = 500)
+//    private String message;
+//
+//    @CreationTimestamp
+//    @Column(name = "created_at", updatable = false)
+//    private LocalDateTime createdAt;
+//
+//    @Column(nullable = false)
+//    private Boolean read = false;
+//}

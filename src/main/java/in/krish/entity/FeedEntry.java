@@ -1,29 +1,30 @@
 package in.krish.entity;
 
-
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
 
-@Setter
-@Getter
 @Entity
-@Table(name = "feed_entries")
+@Table(name = "feed")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class FeedEntry {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
-    @ManyToOne
-    @JoinColumn(name = "post_id")
-    private Post post;
+    @Column(name = "post_id", nullable = false)
+    private Long postId;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
-
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 }
-

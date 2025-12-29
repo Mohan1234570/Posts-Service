@@ -8,7 +8,6 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.util.UUID;
 
 
 @Setter
@@ -18,7 +17,7 @@ import java.util.UUID;
 @Table(name = "roles")
 public class Role {
     @Id
-    private UUID id = UUID.randomUUID();
+    private Long id;
 
     @Column(name = "name", unique = true, nullable = false)
     private String name; // e.g. ROLE_ADMIN, ROLE_USER

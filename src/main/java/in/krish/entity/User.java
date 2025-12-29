@@ -39,10 +39,6 @@ public class User {
 	@Column(name = "authority")
 	private Set<String> authorities = new HashSet<>();
 
-	@OneToMany(cascade = CascadeType.ALL, mappedBy = "user", fetch = FetchType.LAZY)
-	@JsonIgnore
-	private List<Post> posts;
-
 
 	// Expose authorities as GrantedAuthority collection
 	public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -58,9 +54,6 @@ public class User {
 				.collect(Collectors.toSet());
 	}
 
-	@OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-	@JsonManagedReference
-	private List<Like> likes = new ArrayList<>();
 
 	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
@@ -74,7 +67,7 @@ public class User {
 	private Boolean mfaEnabled = false;
 
 	@Column(name = "tenant_id")
-	private UUID tenantId;
+	private Long tenantId;
 
 	public String profileImageUrl;
 }

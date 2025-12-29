@@ -1,42 +1,52 @@
-//package in.krish.service;
-//
-//import in.krish.binding.PostRequest;
-//import in.krish.entity.Post;
-//
-//public interface PostService {
-//
-//    public Post createPost(PostRequest request, String userEmail);
-//}
-
-
 package in.krish.service;
 
-import in.krish.binding.CommentDTO;
 import in.krish.binding.PostRequest;
-//import in.krish.binding.PostSummaryDto;
-import in.krish.entity.Post;
 import in.krish.entity.Comment;
+import in.krish.entity.Post;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
+
 import java.util.List;
+import java.util.Set;
 
 public interface PostService {
-    // Post Management
-    Post createPost(PostRequest request, String userEmail, MultipartFile image) throws IOException;
-//    public List<PostSummaryDto> fetchAllPostSummaries();
-    Post getPostById(Long id);
-    public List<Post> getAllPosts();
-    List<Post> getPostsByUser(String userEmail);
-    public List<Post> getPostsByUserById(Long userId);
-    Post updatePost(Long id, String title, String content, String userEmail, MultipartFile image) throws IOException;
-    void deletePost(Long id, String userEmail);
 
-    // Like System
-    Post likePost(Long postId, String userEmail);
-    Post unlikePost(Long postId, String userEmail);
+    // ================= POST =================
+    Post createPost(
+            PostRequest request,
+            Long userId,
+            Long tenantId,
+            String email,
+            MultipartFile image
+    );
 
-    // Comment System
-    Comment addComment(Long postId, String content);
-    void deleteComment(Long postId, Long commentId, String userEmail);
-    public List<Comment> getAllCommentsForPost(Long postId);
+    List<Post> getAllPosts(Long tenantId);
+
+    Post getPostById(Long postId, Long tenantId);
+
+    Post updatePost(
+            Long postId,
+            String title,
+            String content,
+            MultipartFile image,
+            Long userId,
+            Long tenantId,
+            Set<String> roles
+    );
+
+    void deletePost(
+            Long postId,
+            Long userId,
+            Long tenantId,
+            Set<String> roles
+    );
+
+    // ================= COMMENTS =================
+    Comment addComment(
+            Long postId,
+            String content,
+            Long userId,
+            Long tenantId
+    );
+
+    List<Comment> getAllCommentsForPost(Long postId, Long tenantId);
 }

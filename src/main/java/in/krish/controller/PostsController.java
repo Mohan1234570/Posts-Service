@@ -1,230 +1,133 @@
-
 package in.krish.controller;
 
 import in.krish.binding.*;
-//import in.krish.binding.PostSummaryDto;
+import in.krish.entity.Comment;
 import in.krish.entity.FeedEntry;
 import in.krish.entity.Post;
-import in.krish.entity.Comment;
 import in.krish.impl.PostServiceImpl;
 import in.krish.repo.FeedRepository;
-import in.krish.repo.PostRepo;
+import in.krish.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.MediaType;
 
-import java.security.Principal;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/posts")
+@RequestMapping("/posts")
 @CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class PostsController {
 
     @Autowired
-    private PostServiceImpl postService;
+    private PostService postService;
 
     @Autowired
     private FeedRepository feedRepo;
 
-
-    //this method for create a new post
-    @PostMapping(consumes = "multipart/form-data")
+    // ================= CREATE POST =================
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createPost(
             @ModelAttribute PostRequest request,
             @RequestParam(value = "image", required = false) MultipartFile image,
-            @RequestParam("userEmail") String userEmail) {
-        try {
-            Post post = postService.createPost(request, userEmail, image);
-            return ResponseEntity.ok(post);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader(value = "X-Tenant-Id", required = false) Long tenantId,
+            @RequestHeader(value = "X-User-Email", required = false) String email
+    ) {
+        Post post = postService.createPost(request, userId, tenantId, email, image);
+        return ResponseEntity.ok(new ApiResponse<>(200, "Post created", new PostDTO(post)));
     }
 
-
+    // ================= READ =================
     @GetMapping
-    public ApiResponse<List<PostDTO>> getAllPosts() {
-        List<Post> posts = postService.getAllPosts();
-
-        List<PostDTO> postDTOs = posts.stream()
-                .map(PostDTO::new)
-                .collect(Collectors.toList());
-
-        return new ApiResponse<>(200, "Posts fetched successfully", postDTOs);
+    public ApiResponse<List<PostDTO>> getAllPosts(
+            @RequestHeader("X-Tenant-Id") Long tenantId
+    ) {
+        return new ApiResponse<>(
+                200,
+                "OK",
+                postService.getAllPosts(tenantId)
+                        .stream()
+                        .map(PostDTO::new)
+                        .toList()
+        );
     }
-
-
 
     @GetMapping("/{id}")
-    @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<PostDTO>> getPostById(@PathVariable Long id) {
-        Post post = postService.getPostById(id);
-        PostDTO dto = new PostDTO(post);
-        return ResponseEntity.ok(new ApiResponse<>(200, "Post fetched successfully", dto));
+    public ApiResponse<PostDTO> getPostById(
+            @PathVariable Long id,
+            @RequestHeader("X-Tenant-Id") Long tenantId
+    ) {
+        return new ApiResponse<>(
+                200,
+                "OK",
+                new PostDTO(postService.getPostById(id, tenantId))
+        );
     }
 
-
-    @Transactional(readOnly = true)
-    @GetMapping("/userPosts")
-    public ApiResponse<List<PostDTO>> getMyPosts(@AuthenticationPrincipal UserDetails userDetails) {
-        String email = userDetails.getUsername(); // email from token
-        List<Post> posts = postService.getPostsByUser(email);
-
-        // Convert to DTO
-        List<PostDTO> postDTOs = posts.stream()
-                .map(PostDTO::new)
-                .collect(Collectors.toList());
-
-        return new ApiResponse<>(200, "Posts fetched successfully", postDTOs);
+    // ================= UPDATE =================
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<PostDTO> updatePost(
+            @PathVariable Long id,
+            @RequestParam String title,
+            @RequestParam String content,
+            @RequestParam(required = false) MultipartFile image,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-Tenant-Id") Long tenantId,
+            @RequestHeader("X-User-Roles") String roles
+    ) {
+        Set<String> roleSet = Set.of(roles.split(","));
+        Post post = postService.updatePost(
+                id, title, content, image, userId, tenantId, roleSet
+        );
+        return new ApiResponse<>(200, "Updated", new PostDTO(post));
     }
 
-    @Transactional(readOnly = true)
-    @GetMapping("/userPosts/{userId}")
-    public ApiResponse<List<PostDTO>> getUserPosts(
-            @PathVariable Long userId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        // Optional: you can use JWT user info for access control
-        // String loggedInEmail = userDetails.getUsername();
-
-        List<Post> posts = postService.getPostsByUserById(userId);
-
-        List<PostDTO> postDTOs = posts.stream()
-                .map(PostDTO::new)
-                .collect(Collectors.toList());
-
-        return new ApiResponse<>(200, "Posts fetched successfully", postDTOs);
-    }
-
-
-    @PutMapping(value = "/{postId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> updatePost(
-            @PathVariable Long postId,
-            @RequestParam("title") String title,
-            @RequestParam("content") String content,
-            @RequestParam(value = "image", required = false) MultipartFile image,
-            @RequestParam("userEmail") String userEmail) {
-        try {
-            Post updatedPost = postService.updatePost(postId, title, content, userEmail, image);
-            ApiResponse<Post> response = new ApiResponse<>(
-                    HttpStatus.OK.value(),
-                    "Post updated successfully",
-                    updatedPost
-            );
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
+    // ================= DELETE =================
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deletePost(@PathVariable Long id, @RequestParam String userEmail) {
-        try {
-            postService.deletePost(id, userEmail);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+    public ResponseEntity<?> deletePost(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-Tenant-Id") Long tenantId,
+            @RequestHeader("X-User-Roles") String roles
+    ) {
+        Set<String> roleSet = Set.of(roles.split(","));
+        postService.deletePost(id, userId, tenantId, roleSet);
+        return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/{postId}/like")
-    public ResponseEntity<?> likePost(
-            @PathVariable Long postId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            String email = userDetails.getUsername();
-            Post post = postService.likePost(postId, email);
-
-            // Convert to DTO before returning
-            PostDTO postDTO = new PostDTO(post);
-            return ResponseEntity.ok(new ApiResponse<>(200, "Post liked successfully", postDTO));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-    @PostMapping("/{postId}/unlike")
-    public ResponseEntity<?> unlikePost(
-            @PathVariable Long postId,
-            @AuthenticationPrincipal UserDetails userDetails) {
-        try {
-            String email = userDetails.getUsername();
-            Post post = postService.unlikePost(postId, email);
-
-            // Convert to DTO before returning
-            PostDTO postDTO = new PostDTO(post);
-            return ResponseEntity.ok(new ApiResponse<>(200, "Post unliked successfully", postDTO));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
+    // ================= COMMENTS =================
     @PostMapping("/{postId}/comment")
-    public ResponseEntity<?> addComment(@PathVariable Long postId, @RequestBody CommentRequest request) {
-        try {
-            Comment comment = postService.addComment(postId, request.getContent());
-            CommentResponse response = new CommentResponse(comment.getId(), comment.getContent(), comment.getUser().getEmailid());
-            return ResponseEntity.ok(new CommentResponse(comment));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
-    }
-
-
-    @DeleteMapping("/{postId}/comment/{commentId}")
-    public ResponseEntity<?> deleteComment(
+    public ApiResponse<CommentResponse> addComment(
             @PathVariable Long postId,
-            @PathVariable Long commentId,
-            @RequestParam String userEmail) {
-        try {
-            postService.deleteComment(postId, commentId, userEmail);
-            return ResponseEntity.ok().build();
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+            @RequestBody CommentRequest req,
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestHeader("X-Tenant-Id") Long tenantId
+    ) {
+        Comment c = postService.addComment(postId, req.getContent(), userId, tenantId);
+        return new ApiResponse<>(200, "Comment added", new CommentResponse(c));
     }
 
-    @GetMapping("/{postId}/comments")
-    public ApiResponse<List<CommentDTO>> getAllComments(@PathVariable Long postId) {
-        List<Comment> comments = postService.getAllCommentsForPost(postId);
-
-        // Convert Comment entities to CommentDTO
-        List<CommentDTO> commentDTOs = comments.stream()
-                .map(CommentDTO::new)
-                .collect(Collectors.toList());
-
-        return new ApiResponse<>(200, "Comments fetched successfully", commentDTOs);
-    }
     @GetMapping("/feeds")
-    public ResponseEntity<List<FeedEntry>> getFeed(Principal principal) {
-        Long userId = getUserIdFromPrincipal(principal);
-        return ResponseEntity.ok(feedRepo.findByUserUserIdOrderByCreatedAtDesc(userId));
+    public ResponseEntity<List<FeedEntry>> feeds(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+        return ResponseEntity.ok(
+                feedRepo.findByUserIdOrderByCreatedAtDesc(userId)
+        );
     }
 
-    private Long getUserIdFromPrincipal(Principal principal) {
-        return 1L; // later you’ll map Principal -> actual User ID
-    }
 
+    // ================= PUBLIC =================
     @GetMapping("/quote")
-    public ResponseEntity<String> getQuote() {
-        try {
-            RestTemplate restTemplate = new RestTemplate();
-            String apiUrl = "https://zenquotes.io/api/today";
-            String result = restTemplate.getForObject(apiUrl, String.class);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError()
-                    .body("{\"error\":\"Failed to fetch quote: " + e.getMessage() + "\"}");
-        }
+    public ResponseEntity<String> quote() {
+        return ResponseEntity.ok(
+                new RestTemplate()
+                        .getForObject("https://zenquotes.io/api/today", String.class)
+        );
     }
-
 }

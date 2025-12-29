@@ -38,5 +38,9 @@ public class Follower {
     public void setFollower(User follower) { this.follower = follower; }
 
     public void setFollowing(User following) { this.following = following; }
+
+    public Long tenantId;
+    public Long user_id;
+
 }
 

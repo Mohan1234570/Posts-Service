@@ -8,8 +8,7 @@ import org.springframework.data.domain.Page;
 
 public interface UserService {
 
+	Page<UserDTO> searchUsers(String query, int page, int size);
 
-	public Page<UserDTO> searchUsers(String query, int page, int size);
-//	public User getUserByIdInfo(Long userId);
-	public UserProfileResponse getProfile(Long userId);
+	UserProfileResponse getProfile(Long userId, Long tenantId);
 }

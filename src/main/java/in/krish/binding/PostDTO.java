@@ -1,5 +1,6 @@
 package in.krish.binding;
 
+import in.krish.entity.Post;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
@@ -8,6 +9,7 @@ import java.util.List;
 @Getter
 @Setter
 public class PostDTO {
+
     private Long id;
     private String title;
     private String content;
@@ -15,18 +17,16 @@ public class PostDTO {
     private LocalDateTime dateCreated;
     private int likesCount;
     private List<String> likedBy;
-    private UserDTO user; //
+    private Long userId;
 
-    public PostDTO(in.krish.entity.Post post) {
+    public PostDTO(Post post) {
         this.id = post.getId();
         this.title = post.getTitle();
         this.content = post.getContent();
         this.imageUrl = post.getImageUrl();
-        this.dateCreated = post.getDateCreated();
+        this.dateCreated = post.getCreatedAt();
         this.likesCount = post.getLikesCount();
         this.likedBy = post.getLikedBy();
-        if (post.getUser() != null) {
-            this.user = new UserDTO(post.getUser());
-        }
+        this.userId = post.getUserId();
     }
 }
