@@ -1,7 +1,9 @@
 package in.krish.impl;
 
+import org.springframework.security.access.AccessDeniedException;
 import in.krish.binding.PostRequest;
 import in.krish.entity.*;
+import in.krish.exception.PostNotFoundException;
 import in.krish.repo.*;
 import in.krish.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -128,18 +130,19 @@ public class PostServiceImpl implements PostService {
             Set<String> roles
     ) {
         Post post = postRepo.findByIdAndTenantId(postId, tenantId)
-                .orElseThrow(() -> new RuntimeException("Post not found"));
+                .orElseThrow(() -> new PostNotFoundException("Post not found"));
 
         boolean isOwner = post.getUserId().equals(userId);
         boolean isAdmin = roles != null && roles.contains("ADMIN");
 
         if (!isOwner && !isAdmin) {
-            throw new RuntimeException("Unauthorized to delete post");
+            throw new AccessDeniedException("You are not allowed to delete this post");
         }
 
         deleteOldImage(post.getImageUrl());
         postRepo.delete(post);
     }
+
 
     // =====================================================
     // COMMENTS
