@@ -1,5 +1,7 @@
 package in.krish.impl;
 
+import in.krish.binding.PostCreatedEvent;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import in.krish.binding.PostRequest;
 import in.krish.entity.*;
@@ -35,11 +37,15 @@ public class PostServiceImpl implements PostService {
     @Autowired
     private FollowerRepo followerRepo;
 
-//    @Autowired
-//    private NotificationRepo notificationRepo;
+    private final KafkaTemplate<String, PostCreatedEvent> kafkaTemplate;
+
 
     @Value("${file.upload-dir:uploads}")
     private String uploadDir;
+
+    public PostServiceImpl(KafkaTemplate<String, PostCreatedEvent> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     // =====================================================
     // CREATE POST
@@ -64,7 +70,16 @@ public class PostServiceImpl implements PostService {
 
         Post savedPost = postRepo.save(post);
 
-        //fanOutToFollowers(savedPost, userId);
+        // PUBLISH EVENT
+        kafkaTemplate.send(
+                "post-events",
+                new PostCreatedEvent(
+                        savedPost.getId(),
+                        userId,
+                        tenantId,
+                        savedPost.getTitle()
+                )
+        );
 
         return savedPost;
     }
